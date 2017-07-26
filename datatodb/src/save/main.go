@@ -35,8 +35,14 @@ func main() {
 		}
 		fmt.Println(len(xlFile.Sheets))
 		for _, sheet := range xlFile.Sheets {
+			// rows end with data is null
 			for _, row := range sheet.Rows {
+				// row 5 cell 1 is stock name (just take number to create collection), and labels.
+				// get labels []string
+				n := len(cells)
 				for _, cell := range row.Cells {
+					// from cell 2 ~  n
+					// try int, float, then string
 					text := cell.String()
 					fmt.Printf("%s\n", text)
 				}
