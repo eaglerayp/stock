@@ -34,10 +34,8 @@ func main() {
 	// TODO: connect mongodb
 
 	dialInfo := mgo.DialInfo{
-		Addrs:     []string{"127.0.0.1:20379"},
+		Addrs:     []string{"127.0.0.1:27017"},
 		FailFast:  true,
-		Username:  "",
-		Password:  "",
 		PoolLimit: 1,
 	}
 	maxAttempts := 20
@@ -52,7 +50,13 @@ func main() {
 	if err != nil {
 		panic("[mongo] no reachable server")
 	}
-
+	dateIndex := mgo.Index{
+		Key:        []string{"日期"},
+		Unique:     true,
+		DropDups:   true,
+		Background: true, // See notes.
+		Sparse:     false,
+	}
 	for _, file := range fileList {
 		// read excel from data folder
 		fmt.Println("File:", file)
@@ -62,16 +66,20 @@ func main() {
 			log.Println("open excel fail:", err)
 			panic(err)
 		}
-
+		fmt.Println("SHEETS LEN:", len(xlFile.Sheets))
 		for _, sheet := range xlFile.Sheets {
 			// rows end with data is null
+			if len(sheet.Rows) < 5 {
+				continue
+			}
 			// read row 5 to get stock name, and labels
-
+			fmt.Println("ROWS LEN:", len(sheet.Rows))
 			labelRaw := sheet.Rows[4]
 			cols := len(labelRaw.Cells)
 			labels := make([]string, cols)
 			stockName := labelRaw.Cells[0].String()
 			col := session.DB(db).C(stockName)
+			col.EnsureIndex(dateIndex)
 			bulk := col.Bulk()
 			bulk.Unordered()
 			// TODO: add mgo collection
@@ -88,7 +96,13 @@ func main() {
 				raw := sheet.Rows[i]
 				data := bson.M{}
 				cols = len(raw.Cells)
-				for j := 1; j < cols; j++ {
+				data[labels[1]] = raw.Cells[1].String()
+				if len(raw.Cells[1].String()) < 1 {
+					continue
+				}
+				// for int timestamp
+				data["date"], _ = raw.Cells[1].Int()
+				for j := 2; j < cols; j++ {
 					// from cell 2 ~  n
 					// try int, float, then string
 					key := labels[j]
@@ -107,7 +121,6 @@ func main() {
 				}
 				// TODO:bulk insert
 				bulk.Insert(data)
-				// fmt.Println(data)
 			}
 			_, err = bulk.Run()
 			if err != nil {
