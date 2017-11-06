@@ -11,10 +11,15 @@ Todo:
 
 """
 
+import pandas as pd
 from pymongo import MongoClient
 
 mc = MongoClient(host='10.128.112.181:7379', username='bass', password='F4mIfVIYGUBYBiQE', authSource='admin')
 db = mc.baas
-col = db["_Cache"]
-for doc in col.find():
-    print(doc)
+cursor = db["_Cache"].find()
+df = pd.DataFrame(list(cursor))
+
+# delete useless field
+del df['_id']
+
+print(df)
