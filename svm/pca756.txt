@@ -1,0 +1,35 @@
+AllData:
+
+Data count: 2651
+n stocks: 756
+PCA component: 30
+cum ratio: 0.718135021321
+0  component ratio: 0.153248385037
+1  component ratio: 0.118544113327
+2  component ratio: 0.0733229925056
+3  component ratio: 0.0642474068775
+4  component ratio: 0.0458802099799
+
+After 2010
+
+Data count: 1904
+n stocks: 756
+PCA component: 30
+cum ratio: 0.729140432948
+0  component ratio: 0.236536338673
+1  component ratio: 0.105256976369
+2  component ratio: 0.0910699079543
+3  component ratio: 0.0504782745391
+4  component ratio: 0.049873992226
+
+After 2012
+
+Data count: 1406
+n stocks: 756
+PCA component: 30
+cum ratio: 0.758340817427
+0  component ratio: 0.295209590309
+1  component ratio: 0.126730735923
+2  component ratio: 0.0702364765312
+3  component ratio: 0.0627209854286
+4  component ratio: 0.0603894182205
