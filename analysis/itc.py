@@ -1,67 +1,26 @@
 # -*- coding: utf-8 -*-
-
-
 import pandas as pd
 
-xl = pd.ExcelFile('./data/yuan_20180302.xlsx')
-writer = pd.ExcelWriter('result.xlsx')
-# get ITC meta
-
-itc = xl.parse("Sheet1")
-itc = itc.sort_values(by='日期')
-
-stock = xl.parse("Sheet4")
-stock = stock.sort_values(by='日期')
 ## try get correlation of ITC and stock price, only on ITC had traded
 def NonZeroCorrelation(s1,s2,dayAfter):
-    itcDiff = []
-    priceDiff = []
-    for i in range(0, len(itc)-dayAfter, 1):
+    diff1 = []
+    diff2 = []
+    for i in range(0, len(s1)-dayAfter, 1):
         if s1[i] != 0:
-            itcDiff.append(s1[i])
-            priceDiff.append(s2[i+dayAfter])
-    return pd.Series(itcDiff).corr(pd.Series(priceDiff))
+            diff1.append(s1[i])
+            diff2.append(s2[i+dayAfter])
+    return pd.Series(diff1).corr(pd.Series(diff2))
 
-tradeInc = {}
-tradeInc[5]= NonZeroCorrelation(itc['投信買賣超'],stock['收盤價'], 5)
-tradeInc[1]= NonZeroCorrelation(itc['投信買賣超'],stock['收盤價'], 1)
-tradeInc[0]= NonZeroCorrelation(itc['投信買賣超'],stock['收盤價'], 0)
-
-tradeVol = {}
-tradeVol[5]= NonZeroCorrelation(itc['投信買賣超'],stock['成交量'], 5)
-tradeVol[1]= NonZeroCorrelation(itc['投信買賣超'],stock['成交量'], 1)
-tradeVol[0]= NonZeroCorrelation(itc['投信買賣超'],stock['成交量'], 0)
-
-invHigh = {}
-invHigh[5]= NonZeroCorrelation(itc['投信庫存'],stock['最高價'], 5)
-invHigh[1]= NonZeroCorrelation(itc['投信庫存'],stock['最高價'], 1)
-invHigh[0]= NonZeroCorrelation(itc['投信庫存'],stock['最高價'], 0)
-
-invEnd = {}
-invEnd[5]= NonZeroCorrelation(itc['投信庫存'],stock['收盤價'], 5)
-invEnd[1]= NonZeroCorrelation(itc['投信庫存'],stock['收盤價'], 1)
-invEnd[0]= NonZeroCorrelation(itc['投信庫存'],stock['收盤價'], 0)
-
-corResult = {}
-corResult['投信買賣超&漲幅 (whole)'] = itc['投信買賣超'].corr(itc['漲幅(%)'])
-corResult["投信買賣超&收盤價 cor"]= tradeInc
-corResult["投信買賣超&成交量 cor"]= tradeVol
-corResult["投信庫存&最高價 cor"]= invHigh
-corResult["投信庫存&收盤價 cor"]= invEnd
-
-
-stock = stock.join(itc['投信庫存'])
-stock = stock.join(itc['投信買賣超'])
-
-stock.corr().to_excel(writer, 'COR Matrix')
-
-datas = xl.parse("Sheet7")
-datas = datas.sort_values(by='日期')
-#print(datas.head(5))
-#print(datas.tail(5))
-
-
-
+def FindMaxCorrelation(s1,s2):
+    indexList = [1,2,5,10,20,40]
+    maxCor = -1
+    resultIndex = 0 
+    for i in indexList:
+        cor = NonZeroCorrelation(s1, s2, i)
+        if cor > maxCor:
+            maxCor = cor
+            resultIndex = i
+    return resultIndex, maxCor
 
 # find diff similar to ITC's volume??
 def ITCTradeBank(datas, top):
@@ -121,6 +80,88 @@ def DayTradePriceCor(datas, price, dayAfter):
 
     cor = pd.Series(dayTrade).corr(pd.Series(incRate))
     return cor
+
+
+# def main():
+xl = pd.ExcelFile('./data/yuan_20180302.xlsx')
+writer = pd.ExcelWriter('result.xlsx')
+
+# get ITC meta
+itc = xl.parse("Sheet1")
+itc = itc.sort_values(by='日期')
+# get Stock Meta Data
+stock = xl.parse("Sheet4")
+stock = stock.sort_values(by='日期')
+
+
+# tradeInc = {}
+# tradeInc[5]= NonZeroCorrelation(itc['投信買賣超'],stock['收盤價'], 5)
+# tradeInc[1]= NonZeroCorrelation(itc['投信買賣超'],stock['收盤價'], 1)
+# tradeInc[0]= NonZeroCorrelation(itc['投信買賣超'],stock['收盤價'], 0)
+
+# tradeVol = {}
+# tradeVol[5]= NonZeroCorrelation(itc['投信買賣超'],stock['成交量'], 5)
+# tradeVol[1]= NonZeroCorrelation(itc['投信買賣超'],stock['成交量'], 1)
+# tradeVol[0]= NonZeroCorrelation(itc['投信買賣超'],stock['成交量'], 0)
+
+# invHigh = {}
+# invHigh[5]= NonZeroCorrelation(itc['投信庫存'],stock['最高價'], 5)
+# invHigh[1]= NonZeroCorrelation(itc['投信庫存'],stock['最高價'], 1)
+# invHigh[0]= NonZeroCorrelation(itc['投信庫存'],stock['最高價'], 0)
+
+# invEnd = {}
+# invEnd[5]= NonZeroCorrelation(itc['投信庫存'],stock['收盤價'], 5)
+# invEnd[1]= NonZeroCorrelation(itc['投信庫存'],stock['收盤價'], 1)
+# invEnd[0]= NonZeroCorrelation(itc['投信庫存'],stock['收盤價'], 0)
+
+# corResult = {}
+# corResult['投信買賣超&漲幅 (whole)'] = itc['投信買賣超'].corr(itc['漲幅(%)'])
+# corResult["投信買賣超&收盤價 cor"]= tradeInc
+# corResult["投信買賣超&成交量 cor"]= tradeVol
+# corResult["投信庫存&最高價 cor"]= invHigh
+# corResult["投信庫存&收盤價 cor"]= invEnd
+# corResult["DayTrade&漲幅 cor"]= dayTrade
+# pd.DataFrame(data=corResult).to_excel(writer, 'Cor Result')
+
+# find useful feature
+print("投信庫存,收盤價",FindMaxCorrelation(itc['投信庫存'],stock['收盤價']))
+print("投信庫存,最高價",FindMaxCorrelation(itc['投信庫存'],stock['最高價']))
+print("投信買賣超,成交量",FindMaxCorrelation(itc['投信買賣超'],stock['成交量']))
+print("投信買賣超,收盤價",FindMaxCorrelation(itc['投信買賣超'],stock['收盤價']))
+print("投信買賣超,最高價",FindMaxCorrelation(itc['投信買賣超'],stock['最高價']))
+print("投信賣張,最高價",FindMaxCorrelation(itc['投信賣張'],stock['最高價']))
+print("投信買賣超,成交量變動(%)",FindMaxCorrelation(itc['投信買賣超'],stock['成交量變動(%)']))
+print("投信庫存,成交量變動(%)",FindMaxCorrelation(itc['投信庫存'],stock['成交量變動(%)']))
+
+# 投信庫存,收盤價 (10, -0.2944036489015487)
+# 投信庫存,最高價 (10, -0.29599362567251397)
+# 投信買賣超,成交量 (40, 0.32763276593990576)
+# 投信買賣超,收盤價 (40, 0.3089239124795162)
+# 投信買賣超,最高價 (40, 0.3140942265078386)
+# 投信賣張,最高價 (20, 0.030274366307683324)
+# 投信買賣超,成交量變動(%) (10, 0.1355350230725098)
+# 投信庫存,成交量變動(%) (2, 0.08520542560138196)
+# 小結: 
+# 投信買賣超對兩個月後股價比較有影響
+# 投信買賣超影響兩周內的布局
+
+
+stock = stock.join(itc['投信庫存'])
+stock = stock.join(itc['投信買賣超'])
+
+stock.corr().to_excel(writer, 'COR Matrix')
+
+# ITC SVM predict SVR, using 投信買賣超,投信賣張
+# TODO: with PCA stock 
+# metadata
+
+# 分行分析
+
+# TODO:大量當沖對股價的關聯性
+
+datas = xl.parse("Sheet7")
+datas = datas.sort_values(by='日期')
+
 oneBank = datas.loc[datas['券商名稱'] == '新光'].reset_index(drop=True)
 
 dayTrade = {}
@@ -128,9 +169,6 @@ dayTrade[5]= DayTradePriceCor(oneBank,stock['收盤價'],5)
 dayTrade[1]= DayTradePriceCor(oneBank,stock['收盤價'],1)
 dayTrade[0]= DayTradePriceCor(oneBank,stock['收盤價'],0)
 
-corResult["DayTrade&漲幅 cor"]= dayTrade
-
-pd.DataFrame(data=corResult).to_excel(writer, 'Cor Result')
 pd.DataFrame(data=DayTradeBank(datas,30),columns=['bank','count']).to_excel(writer, 'Day Trade')
 pd.DataFrame(data=ITCTradeBank(datas,30),columns=['bank','count']).to_excel(writer, 'ITC Trade')
 writer.save()
@@ -138,4 +176,5 @@ writer.save()
 # print("ITCBank:")
 # print(ITCTradeBank(datas,10))
 
-
+# if __name__ == '__main__':
+#     main()
