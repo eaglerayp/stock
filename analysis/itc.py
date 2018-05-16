@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
+from sklearn.svm import NuSVR
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
 
 ## try get correlation of ITC and stock price, only on ITC had traded
 def NonZeroCorrelation(s1,s2,dayAfter):
@@ -124,26 +127,29 @@ stock = stock.sort_values(by='日期')
 # pd.DataFrame(data=corResult).to_excel(writer, 'Cor Result')
 
 # find useful feature
-print("投信庫存,收盤價",FindMaxCorrelation(itc['投信庫存'],stock['收盤價']))
-print("投信庫存,最高價",FindMaxCorrelation(itc['投信庫存'],stock['最高價']))
-print("投信買賣超,成交量",FindMaxCorrelation(itc['投信買賣超'],stock['成交量']))
-print("投信買賣超,收盤價",FindMaxCorrelation(itc['投信買賣超'],stock['收盤價']))
-print("投信買賣超,最高價",FindMaxCorrelation(itc['投信買賣超'],stock['最高價']))
-print("投信賣張,最高價",FindMaxCorrelation(itc['投信賣張'],stock['最高價']))
-print("投信買賣超,成交量變動(%)",FindMaxCorrelation(itc['投信買賣超'],stock['成交量變動(%)']))
-print("投信庫存,成交量變動(%)",FindMaxCorrelation(itc['投信庫存'],stock['成交量變動(%)']))
+# print("投信庫存,收盤價",FindMaxCorrelation(itc['投信庫存'],stock['收盤價']))
+# print("投信庫存,最高價",FindMaxCorrelation(itc['投信庫存'],stock['最高價']))
+# print("投信買賣超,成交量",FindMaxCorrelation(itc['投信買賣超'],stock['成交量']))
+# print("投信買賣超,收盤價",FindMaxCorrelation(itc['投信買賣超'],stock['收盤價']))
+# print("投信買賣超,最高價",FindMaxCorrelation(itc['投信買賣超'],stock['最高價']))
+# print("投信買張,最高價",FindMaxCorrelation(itc['投信買張'],stock['最高價']))
+# print("投信賣張,最高價",FindMaxCorrelation(itc['投信賣張'],stock['最高價']))
+# print("投信買賣超,成交量變動(%)",FindMaxCorrelation(itc['投信買賣超'],stock['成交量變動(%)']))
+# print("投信庫存,成交量變動(%)",FindMaxCorrelation(itc['投信庫存'],stock['成交量變動(%)']))
 
 # 投信庫存,收盤價 (10, -0.2944036489015487)
 # 投信庫存,最高價 (10, -0.29599362567251397)
 # 投信買賣超,成交量 (40, 0.32763276593990576)
 # 投信買賣超,收盤價 (40, 0.3089239124795162)
 # 投信買賣超,最高價 (40, 0.3140942265078386)
+# 投信買張,最高價 (40, 0.13562396136450933)
 # 投信賣張,最高價 (20, 0.030274366307683324)
 # 投信買賣超,成交量變動(%) (10, 0.1355350230725098)
 # 投信庫存,成交量變動(%) (2, 0.08520542560138196)
 # 小結: 
 # 投信買賣超對兩個月後股價比較有影響
 # 投信買賣超影響兩周內的布局
+# 投信買張影響市場程度較高
 
 
 stock = stock.join(itc['投信庫存'])
@@ -151,7 +157,62 @@ stock = stock.join(itc['投信買賣超'])
 
 stock.corr().to_excel(writer, 'COR Matrix')
 
+
+# Prepare training features, target values
+# T-40 投信買賣超
+# T-1 投信買賣超
+# T-1 成交量
+# T-1 振幅(%)
+# analysis like KD line?
+
+# Target: stock 最高價/ 漲幅?
+f1 = itc['投信買賣超'][:-40].values
+f2 = itc['投信買賣超'][39:-1].values
+f3 = stock['成交量'][39:-1].values
+f4 = stock['振幅(%)'][39:-1].values
+f5 = stock['最高價'][39:-1].values
+t = stock['最高價'][40:].values
+Tdate = stock['日期'][40:].values
+
+fDatas = {}
+fDatas["投信買賣超-40"] = f1
+fDatas["投信買賣超-1"] = f2
+fDatas["成交量-1"] = f3
+fDatas["振幅-1"] = f4
+fDatas["最高價-1"] = f5
+
+# for validation: it will fit on linear kernel
+# fDatas["最高價"] = stock['最高價'][40:].values
+
+# Preprocessing features
+
+raw = pd.DataFrame(data=fDatas)
+
+# scaler = StandardScaler()
+scaler = preprocessing.MaxAbsScaler()
+scaledFeatures = scaler.fit_transform(raw)
+# features = preprocessing.scale(features)
+
 # ITC SVM predict SVR, using 投信買賣超,投信賣張
+# How to choose kernel of svm
+def OutputPredict(features,target,topic):
+    clf = NuSVR(kernel='linear',C=1.0, max_iter=20)
+    clf = clf.fit(features,target)
+    print("SVM kernel", clf.kernel)
+    results = clf.predict(X=features)
+    print(topic," score:",clf.score(features,target))
+    graphData = {}
+    graphData["RawData"] = target
+    graphData["Prediction"] = results
+    graphData["Date"] = Tdate
+    gd = pd.DataFrame(data=graphData)
+    gd.plot(x="Date")
+    plt.savefig(topic+"_predict")
+
+OutputPredict(raw,t,"RAW")
+OutputPredict(scaledFeatures,t,"MaxAbsScale")
+
+
 # TODO: with PCA stock 
 # metadata
 
