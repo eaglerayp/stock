@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.svm import NuSVR
 from sklearn import preprocessing
 import matplotlib.pyplot as plt
+from sklearn import metrics
 
 ## try get correlation of ITC and stock price, only on ITC had traded
 def NonZeroCorrelation(s1,s2,dayAfter):
@@ -171,14 +172,15 @@ f2 = itc['投信買賣超'][39:-1].values
 f3 = stock['成交量'][39:-1].values
 f4 = stock['振幅(%)'][39:-1].values
 f5 = stock['最高價'][39:-1].values
-t = stock['最高價'][40:].values
+t1 = stock['最高價'][40:].values
+t2 = stock['漲幅(%)'][40:].values
 Tdate = stock['日期'][40:].values
 
 fDatas = {}
-fDatas["投信買賣超-40"] = f1
+# fDatas["投信買賣超-40"] = f1
 fDatas["投信買賣超-1"] = f2
 fDatas["成交量-1"] = f3
-fDatas["振幅-1"] = f4
+# fDatas["振幅-1"] = f4
 fDatas["最高價-1"] = f5
 
 # for validation: it will fit on linear kernel
@@ -195,23 +197,27 @@ scaledFeatures = scaler.fit_transform(raw)
 
 # ITC SVM predict SVR, using 投信買賣超,投信賣張
 # How to choose kernel of svm
-def OutputPredict(features,target,topic):
-    clf = NuSVR(kernel='linear',C=1.0, max_iter=20)
-    clf = clf.fit(features,target)
-    print("SVM kernel", clf.kernel)
-    results = clf.predict(X=features)
-    print(topic," score:",clf.score(features,target))
-    graphData = {}
-    graphData["RawData"] = target
-    graphData["Prediction"] = results
-    graphData["Date"] = Tdate
-    gd = pd.DataFrame(data=graphData)
-    gd.plot(x="Date")
-    plt.savefig(topic+"_predict")
+def SVRPredict(features,target,topic):
+    kernels = ["linear","rbf","poly","sigmoid"]
+    for k in kernels:
+        clf = NuSVR(kernel=k,C=0.5)
+        clf = clf.fit(features,target)
+        print("SVM kernel", k)
+        results = clf.predict(X=features)
+        print(topic," score:",clf.score(features,target))
+        graphData = {}
+        graphData["RawData"] = target
+        graphData["Prediction"] = results
+        graphData["Date"] = Tdate
+        gd = pd.DataFrame(data=graphData)
+        gd.plot(x="Date")
+        plt.savefig(topic+"_"+k)
 
-OutputPredict(raw,t,"RAW")
-OutputPredict(scaledFeatures,t,"MaxAbsScale")
+SVRPredict(raw,t1,"RAW_Price")
+SVRPredict(scaledFeatures,t1,"MaxAbsScale_Price")
 
+SVRPredict(raw,t2,"RAW_Return")
+SVRPredict(scaledFeatures,t2,"MaxAbsScale_Return")
 
 # TODO: with PCA stock 
 # metadata
