@@ -18,7 +18,7 @@ def NonZeroCorrelation(s1,s2,dayAfter):
 def FindMaxCorrelation(s1,s2):
     indexList = [1,2,5,10,20,40]
     maxCor = -1
-    resultIndex = 0 
+    resultIndex = 0
     for i in indexList:
         cor = NonZeroCorrelation(s1, s2, i)
         if cor > maxCor:
@@ -147,7 +147,7 @@ stock = stock.sort_values(by='日期')
 # 投信賣張,最高價 (20, 0.030274366307683324)
 # 投信買賣超,成交量變動(%) (10, 0.1355350230725098)
 # 投信庫存,成交量變動(%) (2, 0.08520542560138196)
-# 小結: 
+# 小結:
 # 投信買賣超對兩個月後股價比較有影響
 # 投信買賣超影響兩周內的布局
 # 投信買張影響市場程度較高
@@ -177,7 +177,7 @@ t2 = stock['漲幅(%)'][40:].values
 Tdate = stock['日期'][40:].values
 
 fDatas = {}
-# fDatas["投信買賣超-40"] = f1
+fDatas["投信買賣超-40"] = f1
 fDatas["投信買賣超-1"] = f2
 fDatas["成交量-1"] = f3
 # fDatas["振幅-1"] = f4
@@ -201,14 +201,17 @@ def SVRPredict(features,target,topic):
     kernels = ["linear","rbf","poly","sigmoid"]
     for k in kernels:
         clf = NuSVR(kernel=k,C=0.5)
-        clf = clf.fit(features,target)
+        clf = clf.fit(features[:-30],target[:-30])
         print("SVM kernel", k)
-        results = clf.predict(X=features)
-        print(topic," score:",clf.score(features,target))
+        test = features[-30:]
+        answer = target[-30:]
+        testDate = Tdate[-30:]
+        results = clf.predict(X=features[-30:])
+        print(topic," score:",clf.score(test,answer))
         graphData = {}
-        graphData["RawData"] = target
+        graphData["RawData"] = answer
         graphData["Prediction"] = results
-        graphData["Date"] = Tdate
+        graphData["Date"] = testDate
         gd = pd.DataFrame(data=graphData)
         gd.plot(x="Date")
         plt.savefig(topic+"_"+k)
@@ -219,7 +222,7 @@ SVRPredict(scaledFeatures,t1,"MaxAbsScale_Price")
 SVRPredict(raw,t2,"RAW_Return")
 SVRPredict(scaledFeatures,t2,"MaxAbsScale_Return")
 
-# TODO: with PCA stock 
+# TODO: with PCA stock
 # metadata
 
 # 分行分析
